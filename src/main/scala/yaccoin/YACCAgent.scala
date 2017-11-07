@@ -3,6 +3,7 @@ package yaccoin
 import akka.actor.{ActorRef, ActorSystem, Address, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import scorex.crypto.signatures.PublicKey
 import yaccoin.actors.Protocol.{BootStrap, DoTransaction, GetPublicKey, MyPublicKey}
 import yaccoin.actors.{Communicator, Miner, Transactor}
@@ -15,9 +16,21 @@ import scala.io.StdIn
 
 object YACCAgent extends App {
 
-  private val system = ActorSystem("YACCSystem")
+  if (args.length < 1)
+    throw new RuntimeException("Args-list too short. Provide at least the IP Address of host system.")
+
+  private val system = ActorSystem(
+    "YACCSystem",
+    ConfigFactory
+      .load()
+      .withValue(
+        "akka.remote.netty.tcp.hostname",
+        ConfigValueFactory.fromAnyRef(args.head)
+      )
+  )
 
   private val remoteAddresses = args
+    .tail
     .map(x => Address("akka.tcp", "YACCSystem", x, 2552))
     .toList
 
@@ -49,7 +62,7 @@ object YACCAgent extends App {
 
       Iterator.continually({print("CMD>> "); StdIn.readLine}).foreach {
         case transactionRegex(_, amt, to, _*) => transactor ! DoTransaction(PublicKey @@ to.getBytes, amt.toLong)
-        case quitRegex(_*) => system.terminate
+        case quitRegex(_*) => system.terminate.wait()
       }
   }
 
