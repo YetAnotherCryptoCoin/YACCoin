@@ -4,12 +4,12 @@ import akka.actor.ActorRef
 import yaccoin.block.{BlockChain, MemPool}
 import yaccoin.utils.future.CancellableFuture
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.TreeSet
 
 package object actors {
 
   /** Type alias for Communicator State.*/
-  type CommunicatorState = (SortedSet[ActorRef], SortedSet[ActorRef])
+  type CommunicatorState = (TreeSet[ActorRef], TreeSet[ActorRef])
 
   /** Type alias for Miner State.*/
   type MinerState = (MemPool, CancellableFuture[Unit])
@@ -21,10 +21,10 @@ package object actors {
   implicit class CommunicatorStateImpl(state: CommunicatorState) {
 
     /** Get Miners. */
-    def miners: SortedSet[ActorRef] = state._1
+    def miners: TreeSet[ActorRef] = state._1
 
     /** Get Transactors. */
-    def transactors: SortedSet[ActorRef] = state._2
+    def transactors: TreeSet[ActorRef] = state._2
 
   }
 

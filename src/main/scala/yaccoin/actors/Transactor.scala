@@ -1,52 +1,51 @@
 package yaccoin.actors
 
 import scorex.crypto.signatures.{PrivateKey, PublicKey}
-import scorex.crypto.hash.Digest
 import yaccoin.actors.Protocol._
 import yaccoin.block._
 import yaccoin.utils.MiningUtils
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+/** Transactor will perform transactions, and send them to Miners to mine.
+  *
+  * For their state, see [[TransactorState]].
+  *
+  * @param initState Initial state.
+  */
 class Transactor(initState: TransactorState) extends AbstractActor[TransactorState](initState) {
 
-  private val keyPair = MiningUtils.signatureCurve.createKeyPair(Array.emptyByteArray)
-
-  private val privateKey: PrivateKey = keyPair._1
-  val publicKey: PublicKey = keyPair._2
-
-  override def preStart(): Unit = {
-
-    implicit val dispatcher: ExecutionContext = context.system.dispatcher
-
-    /* Schedule messages to be sent to miner to begin mining blocks. */
-    context.system.scheduler.schedule(
-      0.milliseconds,
-      MiningUtils.mineInterval,
-      self,
-      BeginMining(null)
-    )
-
-  }
+  /* Public/Private key pair. */
+  private val (privateKey: PrivateKey, publicKey: PublicKey) = MiningUtils.signatureCurve.createKeyPair(Array.emptyByteArray)
 
   override def active(state: TransactorState): Receive = {
 
+    /* Send a discovery message to them. */
+    case BootStrap(remotes) => remotes.foreach(_ ! DiscoverTransactor)
+
+    /* New block, see if we can add it to the block chain. */
     case NewBlock(block) => state.blockChain.addBlock(block) match {
       case Success(x) =>
         log.info(s"Added new block ${x.blocks.head.blockId} to the Block Chain.")
 
-        context.become(active(Tuple1(x)))
+        println(x)
+
+        context become active(Tuple1(x))
         localMiner ! StopMining
         localMiner ! ConfirmedTransactions(block.transactions)
 
       case Failure(ex) => log.error(ex.getMessage)
     }
 
-    case BeginMining(null) =>
-      localMiner ! BeginMining(MiningUtils.hashFunction(state.blockChain.blocks.head.header))
+    /* The local miner is asking for the latest block's hash. */
+    case GetHash =>
+      sender ! LatestBlockHash(MiningUtils.hashFunction(state.blockChain.blocks.head.header))
 
+    /* The local program is asking for your public key. */
+    case GetPublicKey =>
+      sender ! MyPublicKey(publicKey)
+
+    /* Someone on the outside says, send money. */
     case DoTransaction(to, amt) =>
       log.info(s"Sending $amt from $publicKey(me) to $to.")
 

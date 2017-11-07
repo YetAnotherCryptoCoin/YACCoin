@@ -21,7 +21,7 @@ object MiningUtils {
   val mineInterval: FiniteDuration = 5.minutes
 
   /** Number of leading bits of the hash that need to be zero. */
-  val difficulty: Int = 20
+  val difficulty: Int = 24
 
   private val initialZeroBytes: Array[Byte] = Array.ofDim[Byte](difficulty / 8)
   private val remainingZeroBits: Byte = (255 >> (difficulty % 8)).toByte
@@ -52,7 +52,7 @@ object MiningUtils {
     if (difficultyFunction(block.header)) {
       block
     } else {
-      mineBlock(block.copy(blockId = System.currentTimeMillis, nonce = Random.nextLong))
+      mineBlock(block.copy(nonce = block.nonce + 1))
     }
 
 }

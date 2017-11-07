@@ -15,7 +15,8 @@ case class UnsignedTransaction(
                                 txnId: Long,
                                 from: PublicKey,
                                 to: PublicKey,
-                                amount: Double) extends Ordered[UnsignedTransaction] {
+                                amount: Double
+                              ) extends Ordered[UnsignedTransaction] {
 
   /** Sign the transaction with the sender's private key.
     *

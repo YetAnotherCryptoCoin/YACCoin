@@ -2,14 +2,14 @@ package yaccoin.block
 
 import yaccoin.utils.MiscUtils
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.TreeSet
 import scala.util.Try
 
 /** A class for MemPool.
   *
   * @param transactions List of transactions.
   */
-case class MemPool(transactions: SortedSet[SignedTransaction]) {
+case class MemPool(transactions: TreeSet[SignedTransaction]) {
 
   /** Add a transaction to the MemPool after verifying it.
     *
@@ -23,7 +23,7 @@ case class MemPool(transactions: SortedSet[SignedTransaction]) {
       "Transaction cannot be verified."
     )
 
-    verifyTransaction.map(_ => MemPool(transactions ++ SortedSet(signedTxn)))
+    verifyTransaction.map(_ => MemPool(transactions ++ TreeSet(signedTxn)))
 
   }
 
@@ -32,7 +32,7 @@ case class MemPool(transactions: SortedSet[SignedTransaction]) {
     * @param txns Transactions to be removed.
     * @return Set difference of current and confirmed transactions.
     */
-  def removeTransactions(txns: SortedSet[SignedTransaction]): MemPool =
+  def removeTransactions(txns: TreeSet[SignedTransaction]): MemPool =
     MemPool(transactions &~ txns)
 
 }
@@ -40,6 +40,6 @@ case class MemPool(transactions: SortedSet[SignedTransaction]) {
 object MemPool {
 
   /** An empty memPool. */
-  val emptyMemPool: MemPool = MemPool(SortedSet())
+  val emptyMemPool: MemPool = MemPool(TreeSet())
 
 }

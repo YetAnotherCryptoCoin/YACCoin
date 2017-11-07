@@ -45,11 +45,13 @@ case class BlockChain(blocks: List[Block]) {
 
   }
 
+  override def toString: String = s"BlockChain: ${blocks.map(_.toString).reduce(_ + _)}!"
+
 }
 
 object BlockChain {
 
   /** Get the block chain with only Genesis block. */
-  def apply: BlockChain = BlockChain(List(Block.genesisBlock))
+  val initBlockChain: BlockChain = BlockChain(List(Block.genesisBlock))
 
 }
