@@ -21,6 +21,8 @@ class Communicator(initState: CommunicatorState) extends AbstractActor[Communica
 
     /* Bootstrap. */
     case BootStrap(remotes) =>
+      log.info(s"Bootstrapping for addresses: $remotes.")
+
       implicit val timeout: Timeout = Timeout(1.minute)
       implicit val ctx: ExecutionContext = context.system.dispatchers.lookup("resolve-dispatcher")
 

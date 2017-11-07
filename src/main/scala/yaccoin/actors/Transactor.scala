@@ -1,6 +1,7 @@
 package yaccoin.actors
 
 import scorex.crypto.signatures.{PrivateKey, PublicKey}
+import scorex.utils.Random
 import yaccoin.actors.Protocol._
 import yaccoin.block._
 import yaccoin.utils.MiningUtils
@@ -16,7 +17,8 @@ import scala.util.{Failure, Success}
 class Transactor(initState: TransactorState) extends AbstractActor[TransactorState](initState) {
 
   /* Public/Private key pair. */
-  private val (privateKey: PrivateKey, publicKey: PublicKey) = MiningUtils.signatureCurve.createKeyPair(Array.emptyByteArray)
+  private val (privateKey: PrivateKey, publicKey: PublicKey) =
+    MiningUtils.signatureCurve.createKeyPair(Random.randomBytes())
 
   override def active(state: TransactorState): Receive = {
 
