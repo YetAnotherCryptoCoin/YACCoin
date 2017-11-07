@@ -1,6 +1,6 @@
 package yaccoin.actors
 
-import akka.actor.ActorSelection
+import akka.actor.{ActorRef, Address}
 import scorex.crypto.hash.Digest
 import scorex.crypto.signatures.PublicKey
 import yaccoin.block.{Block, SignedTransaction}
@@ -16,11 +16,11 @@ object Protocol {
   /** Discovery message sent by a new transactor to
     * make everyone aware of it's existence. */
   @SerialVersionUID(201L)
-  object DiscoverTransactor extends Message
+  case class DiscoverTransactor(actor: ActorRef) extends Message
 
   /** Discovery message for miner. */
   @SerialVersionUID(202L)
-  object DiscoverMiner extends Message
+  case class DiscoverMiner(actor: ActorRef) extends Message
 
   /** A new transaction sent by a Transactor.
     *
@@ -73,7 +73,7 @@ object Protocol {
     * @param remote A list of remote communicators.
     */
   @SerialVersionUID(211L)
-  case class BootStrap(remote: List[ActorSelection]) extends Message
+  case class BootStrap(remote: List[Address]) extends Message
 
   /** Send me your public key. */
   @SerialVersionUID(212L)

@@ -17,26 +17,25 @@ object YACCAgent extends App {
 
   private val system = ActorSystem("YACCSystem")
 
-  private val remoteCommunicators = args
-    .map(x => Address("akka.tcp", "YACCSystem", x, 2552).toString)
-    .map(x => system.actorSelection(s"$x/user/localCommunicator"))
+  private val remoteAddresses = args
+    .map(x => Address("akka.tcp", "YACCSystem", x, 2552))
     .toList
-
-  system.actorOf(
-    Props(classOf[Communicator], (TreeSet[ActorRef](), TreeSet[ActorRef]())),
-    "localCommunicator"
-  )
 
   system.actorOf(
     Props(classOf[Miner], MemPool.emptyMemPool),
     "localMiner"
-  ) ! BootStrap(remoteCommunicators)
+  )
 
   val transactor = system.actorOf(
     Props(classOf[Transactor], Tuple1(BlockChain.initBlockChain)),
     "localTransactor"
   )
-  transactor ! BootStrap(remoteCommunicators)
+
+  system.actorOf(
+    Props(classOf[Communicator], (TreeSet[ActorRef](), TreeSet[ActorRef]())),
+    "localCommunicator"
+  ) ! BootStrap(remoteAddresses)
+
 
   implicit val timeout: Timeout = Timeout(1.minute)
   implicit val ctx: ExecutionContext = ExecutionContext.global
@@ -45,14 +44,12 @@ object YACCAgent extends App {
     case MyPublicKey(publicKey) =>
       println(s"Local Transactor's Public Key: ${publicKey.mkString(":")}.")
 
-      @inline def defined(line: String) = {
-        line != null && !line.startsWith(":q")
-      }
+      val transactionRegex = """^[ \t]*:t(ransaction)?[ \t]+([0-9]+)[ \t]+((\-?[0-9]+)(:\-?[0-9]+)*)[ \t]*$""".r
+      val quitRegex = """^[ \t]*:q(uit)?[ \t]*$""".r
 
-      val transactionRegex = """:txn ([0-9]+) ((\-?[0-9]+)(:\-?[0-9]+)*)"""".r
-
-      Iterator.continually({print("CMD>> "); StdIn.readLine}).takeWhile(defined).foreach {
-        case transactionRegex(amt, to, _*) => transactor ! DoTransaction(PublicKey @@ to.getBytes, amt.toLong)
+      Iterator.continually({print("CMD>> "); StdIn.readLine}).foreach {
+        case transactionRegex(_, amt, to, _*) => transactor ! DoTransaction(PublicKey @@ to.getBytes, amt.toLong)
+        case quitRegex(_*) => system.terminate
       }
   }
 

@@ -1,7 +1,11 @@
 package yaccoin.actors
 
 import akka.actor.Terminated
+import akka.util.Timeout
 import yaccoin.actors.Protocol._
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /** Communicator is responsible for keeping
   * track of all the miners and transactors in the
@@ -15,22 +19,41 @@ class Communicator(initState: CommunicatorState) extends AbstractActor[Communica
 
   override def active(state: CommunicatorState): Receive = {
 
-    /* A new transactor appeared. */
-    case DiscoverTransactor =>
-      if (!state.transactors.par.contains(sender)) {
-        log.info(s"New transactor $sender recognised.")
+    /* Bootstrap. */
+    case BootStrap(remotes) =>
+      implicit val timeout: Timeout = Timeout(1.minute)
+      implicit val ctx: ExecutionContext = context.system.dispatchers.lookup("resolve-dispatcher")
 
-        context.watch(sender)
-        context become active((state.miners, state.transactors + sender))
+      remotes
+        .map(_.toString + "/user/localCommunicator")
+        .foreach(x => context.actorSelection(x) ! BootStrap(List(self.path.address)))
+
+      remotes
+        .map(_.toString + "/user/localMiner")
+        .map(x => context.actorSelection(x).resolveOne)
+        .foreach(_.map(ref => self ! DiscoverMiner(ref)))
+
+      remotes
+        .map(_.toString + "/user/localTransactor")
+        .map(x => context.actorSelection(x).resolveOne)
+        .foreach(_.map(ref => self ! DiscoverTransactor(ref)))
+
+    /* A new transactor appeared. */
+    case DiscoverTransactor(actor) =>
+      if (!state.transactors.par.contains(actor)) {
+        log.info(s"New transactor $actor recognised.")
+
+        context.watch(actor)
+        context become active((state.miners, state.transactors + actor))
       }
 
     /* A new miner appeared. */
-    case DiscoverMiner =>
-      if (!state.miners.par.contains(sender)) {
-        log.info(s"New miner $sender recognised.")
+    case DiscoverMiner(actor) =>
+      if (!state.miners.par.contains(actor)) {
+        log.info(s"New miner $actor recognised.")
 
-        context.watch(sender)
-        context become active((state.miners + sender, state.transactors))
+        context.watch(actor)
+        context become active((state.miners + actor, state.transactors))
       }
 
     /* A transactor/miner died. */

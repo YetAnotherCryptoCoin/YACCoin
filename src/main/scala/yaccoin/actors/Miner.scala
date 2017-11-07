@@ -26,9 +26,6 @@ class Miner(initMemPool: MemPool)
 
   override def active(state: MinerState): Receive = {
 
-    /* Send a discovery message to them. */
-    case BootStrap(remotes) => remotes.foreach(_ ! DiscoverMiner)
-
     /* New transaction arrived. Add it to MemPool. */
     case NewTransaction(signedTxn) => state.memPool.addTransaction(signedTxn) match {
       case Success(x) =>

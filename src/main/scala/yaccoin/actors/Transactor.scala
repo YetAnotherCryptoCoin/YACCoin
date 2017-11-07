@@ -20,9 +20,6 @@ class Transactor(initState: TransactorState) extends AbstractActor[TransactorSta
 
   override def active(state: TransactorState): Receive = {
 
-    /* Send a discovery message to them. */
-    case BootStrap(remotes) => remotes.foreach(_ ! DiscoverTransactor)
-
     /* New block, see if we can add it to the block chain. */
     case NewBlock(block) => state.blockChain.addBlock(block) match {
       case Success(x) =>
