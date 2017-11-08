@@ -121,3 +121,4 @@ project/target
 #### vim ####
 *.swp
 */*.swp
+class_file

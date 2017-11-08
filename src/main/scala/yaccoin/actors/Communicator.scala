@@ -28,7 +28,7 @@ class Communicator(initState: CommunicatorState) extends AbstractActor[Communica
 
       remotes
         .map(_.toString + "/user/localCommunicator")
-        .foreach(x => context.actorSelection(x) ! BootStrap(List(self.path.address)))
+        .foreach(x => context.actorSelection(x) ! BootStrapped)
 
       remotes
         .map(_.toString + "/user/localMiner")
@@ -39,6 +39,23 @@ class Communicator(initState: CommunicatorState) extends AbstractActor[Communica
         .map(_.toString + "/user/localTransactor")
         .map(x => context.actorSelection(x).resolveOne)
         .foreach(_.map(ref => self ! DiscoverTransactor(ref)))
+
+    /* Received bootstrap request. Add their agents. */
+    case BootStrapped =>
+      log.info(s"Getting info from $sender.")
+
+      implicit val timeout: Timeout = Timeout(1.minute)
+      implicit val ctx: ExecutionContext = context.system.dispatchers.lookup("resolve-dispatcher")
+
+      context
+        .actorSelection(sender.path.address.toString + "/user/localTransactor")
+        .resolveOne
+        .map(ref => self ! DiscoverTransactor(ref))
+
+      context
+        .actorSelection(sender.path.address.toString + "/user/localMiner")
+        .resolveOne
+        .map(ref => self ! DiscoverMiner(ref))
 
     /* A new transactor appeared. */
     case DiscoverTransactor(actor) =>

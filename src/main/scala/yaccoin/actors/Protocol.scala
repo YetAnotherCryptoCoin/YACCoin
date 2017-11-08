@@ -75,12 +75,16 @@ object Protocol {
   @SerialVersionUID(211L)
   case class BootStrap(remote: List[Address]) extends Message
 
-  /** Send me your public key. */
+  /** Tell them you're up! */
   @SerialVersionUID(212L)
+  object BootStrapped extends Message
+
+  /** Send me your public key. */
+  @SerialVersionUID(213L)
   object GetPublicKey extends Message
 
   /** Here is my public key. */
-  @SerialVersionUID(213L)
+  @SerialVersionUID(214L)
   case class MyPublicKey(publicKey: PublicKey) extends Message
 
 }
