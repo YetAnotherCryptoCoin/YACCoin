@@ -8,7 +8,7 @@ import yaccoin.block.{Block, MemPool}
 import yaccoin.utils.MiningUtils
 import yaccoin.utils.future.CancellableFuture
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -38,25 +38,33 @@ class Miner(initMemPool: MemPool)
     }
 
     /* Some transactions were confirmed. Remove them from MemPool. */
-    case ConfirmedTransactions(txns) => if (txns.intersect(state.memPool.transactions).nonEmpty) {
+    case ConfirmedTransactions(txns) => if (state.memPool.transactions.diff(txns).isEmpty) {
+      log.info(s"All transactions mined successfully.")
+
       state.forge.cancel()
-      context become active((state.memPool.removeTransactions(txns), CancellableFuture.successful(Unit)))
+      context become active((MemPool.emptyMemPool, state.forge))
+    } else if (txns.intersect(state.memPool.transactions).nonEmpty) {
+      log.info(s"Some transactions confirmed, but not all. Stopping mining operation.")
+
+      state.forge.cancel()
+      context become active((state.memPool.removeTransactions(txns), state.forge))
     }
 
     /* Start a mining operation. */
-    case BeginMining => if (state.memPool.transactions.nonEmpty) {
-      state.forge.cancel()
-
+    case BeginMining => if (state.memPool.transactions.nonEmpty && state.forge.future.isCompleted) {
       log.info(s"Beginning the mining of a new block.")
 
       implicit val ctx: ExecutionContext = context.system.dispatchers.lookup("mining-dispatcher")
       implicit val timeout: Timeout = Timeout(MiningUtils.mineInterval)
 
       context become active((state.memPool, CancellableFuture {
-        localTransactor ? GetHash map {
-          case LatestBlockHash(prevHash) =>
+        /* Blocking call inside a future is cool. */
+        val prevHash = Await.result(localTransactor ? GetHash, timeout.duration)
+
+        prevHash match {
+          case LatestBlockHash(hash) =>
             /* Start mining the block. */
-            val block = MiningUtils.mineBlock(Block(state.memPool.transactions, prevHash))
+            val block = MiningUtils.mineBlock(Block(state.memPool.transactions, hash))
 
             /* Send newly mined block to everyone. */
             localCommunicator ! NewBlock(block)
@@ -69,7 +77,10 @@ class Miner(initMemPool: MemPool)
       log.info("Force stopping mining operation.")
 
       state.forge.cancel()
-      context become active((state.memPool, CancellableFuture.successful(Unit)))
+
+    /* Show your mem-pool. */
+    case ShowMemPool =>
+      println(state.memPool)
 
   }
 

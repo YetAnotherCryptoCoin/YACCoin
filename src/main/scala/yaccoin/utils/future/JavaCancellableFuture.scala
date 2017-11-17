@@ -30,7 +30,6 @@ class JavaCancellableFuture[T](ctx: ExecutionContext, todo: => T) extends Cancel
   /** Cancel the future. */
   override def cancel(): Unit = if (!javaFuture.isDone) {
     javaFuture.cancel(true)
-    promise.failure(new RuntimeException("Task cancelled."))
   }
 
   /* Execute the javaFuture. */

@@ -87,4 +87,12 @@ object Protocol {
   @SerialVersionUID(214L)
   case class MyPublicKey(publicKey: PublicKey) extends Message
 
+  /** Print current MemPool. */
+  @SerialVersionUID(215L)
+  object ShowMemPool extends Message
+
+  /** Print current BlockChain. */
+  @SerialVersionUID(215L)
+  object ShowBlockChain extends Message
+
 }

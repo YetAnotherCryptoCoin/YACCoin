@@ -1,6 +1,6 @@
 package yaccoin.block
 
-import yaccoin.utils.MiscUtils
+import yaccoin.utils.{MiningUtils, MiscUtils}
 
 import scala.util.Try
 
@@ -26,9 +26,9 @@ case class BlockChain(blocks: List[Block]) {
       "New block is older than current block."
     )
 
-    /* Previous block's header contains current block's hash. */
+    /* New block's header contains previous block's hash. */
     val validateHistory = MiscUtils.condToTry(
-      newBlock.header.indexOfSlice(blocks.head.header) != -1,
+      newBlock.prevBlockHash.sameElements(MiningUtils.hashFunction(blocks.head.header)),
       "New block does not succeed the current block."
     )
 
@@ -39,7 +39,7 @@ case class BlockChain(blocks: List[Block]) {
     )
 
     /* Perform validation and return the new BlockChain. */
-    validateId.map(_ => validateHistory).map(_ => validateIntegrity).map({_ =>
+    validateId.flatMap(_ => validateHistory).flatMap(_ => validateIntegrity).map({_ =>
       BlockChain(List(newBlock) ++ blocks)
     })
 

@@ -27,10 +27,7 @@ class Transactor(initState: TransactorState) extends AbstractActor[TransactorSta
       case Success(x) =>
         log.info(s"Added new block ${x.blocks.head.blockId} to the Block Chain.")
 
-        println(x)
-
         context become active(Tuple1(x))
-        localMiner ! StopMining
         localMiner ! ConfirmedTransactions(block.transactions)
 
       case Failure(ex) => log.error(ex.getMessage)
@@ -49,6 +46,10 @@ class Transactor(initState: TransactorState) extends AbstractActor[TransactorSta
       log.info(s"Sending $amt from $publicKey(me) to $to.")
 
       localCommunicator ! NewTransaction(UnsignedTransaction(publicKey, to, amt).sign(privateKey))
+
+    /* Show your block-chain. */
+    case ShowBlockChain =>
+      println(state.blockChain)
 
   }
 

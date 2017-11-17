@@ -26,7 +26,7 @@ case class Block(
     BigInt(nonce).toByteArray
 
   override def toString: String =
-    s"Block[${MiningUtils.hashFunction(header)}]($blockId, ${transactions.size}, $prevBlockHash, $nonce) ==> "
+    s"Block[${MiningUtils.hashFunction(header)}]($blockId, ${transactions.size}, ${transactions.last.txn.txnId}, $prevBlockHash, $nonce) ==> "
 
 }
 

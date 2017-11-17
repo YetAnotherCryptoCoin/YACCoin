@@ -18,7 +18,7 @@ object MiningUtils {
   val hashFunction: CryptographicHash64 = Blake2b512
 
   /** How often to mine blocks. */
-  val mineInterval: FiniteDuration = 5.minutes
+  val mineInterval: FiniteDuration = 1.minute
 
   /** Number of leading bits of the hash that need to be zero. */
   val difficulty: Int = 24
